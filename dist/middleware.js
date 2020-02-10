@@ -141,7 +141,19 @@ function compose() {
  * middlewareManager.use('walk', logger);
  * p.walk(3);
  *
- * Whenever a Person instance call it's walk method, we'll see logs from the looger middleware.
+ * Whenever a Person instance call it's walk method, we'll see logs from the logger middleware.
+ *
+ * ## Apply to all
+ *
+ * Take the same example as above but do not specify the walk method instead pass null.
+ * // apply middleware to target object
+ * const p = new Person();
+ * const middlewareManager = new MiddlewareManager(p);
+ * middlewareManager.use(null, logger);
+ * p.walk(3);
+ * p.speak('hello');
+ *
+ * Whenever a Person instance calls any of it's methods, we'll see logs from the logger middleware.
  *
  * ## Middleware object
  * We can also apply a middleware object to a target object.
@@ -280,7 +292,8 @@ function () {
      * Apply (register) middleware functions to the target function or apply (register) middleware objects.
      * If the first argument is a middleware object, the rest arguments must be middleware objects.
      *
-     * @param {string|object} methodName String for target function name, object for a middleware object.
+     * @param {string|object|null} methodName String for target function name, object for a middleware object,
+     * null will apply the middlewares to all methods on the target.
      * @param {...function|...object} middlewares The middleware chain to be applied.
      * @return {object} this
      */
@@ -294,7 +307,7 @@ function () {
         middlewares[_key4 - 1] = arguments[_key4];
       }
 
-      if (_typeof(methodName) === 'object') {
+      if (methodName !== null && _typeof(methodName) === 'object') {
         Array.prototype.slice.call(arguments).forEach(function (arg) {
           // A middleware object can specify target functions within middlewareMethods (Array).
           // e.g. obj.middlewareMethods = ['method1', 'method2'];
@@ -302,6 +315,14 @@ function () {
           _typeof(arg) === 'object' && (arg.middlewareMethods || (Object.keys(arg).length ? Object.keys(arg) : Object.getOwnPropertyNames(Object.getPrototypeOf(arg)))).forEach(function (key) {
             typeof arg[key] === 'function' && _this2._methodIsValid(key) && _this2._applyToMethod(key, arg[key].bind(arg));
           });
+        });
+      } else if (methodName === null) {
+        var proto = Object.getPrototypeOf(this._target);
+        var methodNames = Object.getOwnPropertyNames(proto).filter(function (key) {
+          return typeof proto[key] === 'function' && key !== 'constructor';
+        });
+        methodNames.forEach(function (methodName) {
+          return _this2._applyToMethod.apply(_this2, [methodName].concat(middlewares));
         });
       } else {
         this._applyToMethod.apply(this, [methodName].concat(middlewares));
