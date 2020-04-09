@@ -282,7 +282,9 @@ function () {
           }
 
           middlewares.forEach(function (middleware) {
-            return typeof middleware === 'function' && _this._methodMiddlewares[methodName].push(middleware(_this._target));
+            if (typeof middleware === 'function') {
+              _this._methodMiddlewares[methodName].push(middleware(_this._target, methodName));
+            }
           });
           this._target[methodName] = compose.apply(void 0, _toConsumableArray(this._methodMiddlewares[methodName]))(method.bind(this._target));
         }
